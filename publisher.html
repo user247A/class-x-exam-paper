@@ -37,7 +37,7 @@
       formData.append('file', file);
 
       try {
-        const res = await fetch('https://class-vi-exam-paper.onrender.com/publish', {
+        const res = await fetch('https://class-x-exam-paper.onrender.com/publish', {
           method: 'POST',
           body: formData,
         });
@@ -52,7 +52,7 @@
 
     async function fetchDocs() {
       try {
-        const res = await fetch('https://class-vi-exam-paper.onrender.com/view');
+        const res = await fetch('https://class-x-exam-paper.onrender.com/view');
         const docs = await res.json();
         const list = document.getElementById('docList');
         list.innerHTML = '';
@@ -72,7 +72,7 @@
 
     async function deleteDoc(id) {
       try {
-        const res = await fetch(`https://class-vi-exam-paper.onrender.com/delete/${id}`, { method: 'DELETE' });
+        const res = await fetch(`https://class-x-exam-paper.onrender.com/delete/${id}`, { method: 'DELETE' });
         const data = await res.json();
         alert(data.message || data.error);
         fetchDocs();
