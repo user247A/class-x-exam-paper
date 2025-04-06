@@ -13,30 +13,33 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve static files
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 
-// Connect to MongoDB
+// Static files
+app.use("/uploads", express.static(uploadsDir));
+
+// MongoDB connection
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch(err => console.error("❌ MongoDB error:", err));
+.then(() => console.log("✅ MongoDB connected"))
+.catch(err => console.error("❌ MongoDB error:", err));
 
-// Multer setup
+// Multer config
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/"),
   filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
 });
 const upload = multer({ storage });
 
-// Upload document
+// Upload
 app.post("/publish", upload.single("file"), async (req, res) => {
   try {
     const { header } = req.body;
     const file = req.file;
-
     const fileURL = `${req.protocol}://${req.get("host")}/uploads/${file.filename}`;
 
     const newDoc = new Document({
@@ -50,41 +53,43 @@ app.post("/publish", upload.single("file"), async (req, res) => {
     await newDoc.save();
     res.json({ message: "✅ Document uploaded successfully!" });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "❌ Failed to upload document." });
+    console.error("❌ Upload error:", err);
+    res.status(500).json({ error: "Failed to upload document." });
   }
 });
 
-// View all documents
+// View
 app.get("/view", async (req, res) => {
   try {
     const docs = await Document.find();
     res.json(docs);
   } catch (err) {
-    res.status(500).json({ message: "❌ Failed to fetch documents." });
+    res.status(500).json({ error: "Failed to fetch documents." });
   }
 });
 
-// Delete a document
+// Delete
 app.delete("/delete/:id", async (req, res) => {
   try {
     const doc = await Document.findById(req.params.id);
-    if (!doc) return res.status(404).json({ message: "Document not found" });
+    if (!doc) return res.status(404).json({ error: "Document not found." });
 
-    // Safe delete
-    if (fs.existsSync(doc.filePath)) {
-      fs.unlinkSync(doc.filePath);
-    }
+    if (fs.existsSync(doc.filePath)) fs.unlinkSync(doc.filePath);
 
     await doc.deleteOne();
     res.json({ message: "🗑️ Document deleted successfully!" });
   } catch (err) {
     console.error("❌ Delete route error:", err);
-    res.status(500).json({ message: "❌ Failed to delete document." });
+    res.status(500).json({ error: "Failed to delete document." });
   }
 });
 
-// ✅ FIX: Use dynamic port for Render
+// Catch-all 404
+app.use((req, res) => {
+  res.status(404).json({ error: "Not found" });
+});
+
+// Port
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
