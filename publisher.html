@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Publisher</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #f5f6fa; margin: 0; padding: 20px; color: #2f3640; }
+    h1 { text-align: center; color: #273c75; }
+    .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; }
+    input[type="text"], input[type="file"] { width: 100%; padding: 10px; margin: 10px 0; border-radius: 4px; border: 1px solid #ccc; }
+    button { background: #44bd32; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #4cd137; }
+    .doc { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f1f2f6; margin: 10px 0; border-radius: 4px; }
+    .doc span { font-weight: bold; }
+    .doc button { background: #e84118; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Publisher Panel</h1>
+    <input type="text" id="header" placeholder="Enter header" />
+    <input type="file" id="fileInput" />
+    <button onclick="uploadDoc()">Upload Document</button>
+    <h3>Uploaded Documents:</h3>
+    <div id="docList"></div>
+  </div>
+
+  <script>
+    async function uploadDoc() {
+      const header = document.getElementById('header').value;
+      const file = document.getElementById('fileInput').files[0];
+      if (!header || !file) return alert("Please fill all fields");
+
+      const formData = new FormData();
+      formData.append('header', header);
+      formData.append('file', file);
+
+      try {
+        const res = await fetch('https://class-vi-exam-paper.onrender.com/publish', {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await res.json();
+        alert(data.message || data.error);
+        fetchDocs();
+      } catch (error) {
+        console.error("Upload failed:", error);
+        alert("Upload failed. Check server or network.");
+      }
+    }
+
+    async function fetchDocs() {
+      try {
+        const res = await fetch('https://class-vi-exam-paper.onrender.com/view');
+        const docs = await res.json();
+        const list = document.getElementById('docList');
+        list.innerHTML = '';
+        docs.forEach(doc => {
+          const div = document.createElement('div');
+          div.className = 'doc';
+          div.innerHTML = `
+            <span>${doc.header}</span>
+            <button onclick="deleteDoc('${doc._id}')">Delete</button>
+          `;
+          list.appendChild(div);
+        });
+      } catch (error) {
+        console.error("Fetch error:", error);
+      }
+    }
+
+    async function deleteDoc(id) {
+      try {
+        const res = await fetch(`https://class-vi-exam-paper.onrender.com/delete/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        alert(data.message || data.error);
+        fetchDocs();
+      } catch (error) {
+        console.error("Delete error:", error);
+      }
+    }
+
+    fetchDocs();
+  </script>
+</body>
+</html>
