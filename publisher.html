@@ -27,6 +27,8 @@
   </div>
 
   <script>
+    const baseURL = 'https://class-x-exam-paper.onrender.com';
+
     async function uploadDoc() {
       const header = document.getElementById('header').value;
       const file = document.getElementById('fileInput').files[0];
@@ -37,22 +39,27 @@
       formData.append('file', file);
 
       try {
-        const res = await fetch('https://class-x-exam-paper.onrender.com/publish', {
-          method: 'POST',
-          body: formData,
-        });
-        const data = await res.json();
-        alert(data.message || data.error);
-        fetchDocs();
+        const res = await fetch(`${baseURL}/publish`, { method: 'POST', body: formData });
+        const contentType = res.headers.get("content-type");
+
+        if (contentType && contentType.includes("application/json")) {
+          const data = await res.json();
+          alert(data.message || data.error);
+          fetchDocs();
+        } else {
+          const text = await res.text();
+          console.error("Non-JSON response:", text);
+          alert("❌ Unexpected server response. Check console.");
+        }
       } catch (error) {
         console.error("Upload failed:", error);
-        alert("Upload failed. Check server or network.");
+        alert("❌ Upload failed. Check network or server.");
       }
     }
 
     async function fetchDocs() {
       try {
-        const res = await fetch('https://class-x-exam-paper.onrender.com/view');
+        const res = await fetch(`${baseURL}/view`);
         const docs = await res.json();
         const list = document.getElementById('docList');
         list.innerHTML = '';
@@ -72,7 +79,7 @@
 
     async function deleteDoc(id) {
       try {
-        const res = await fetch(`https://class-x-exam-paper.onrender.com/delete/${id}`, { method: 'DELETE' });
+        const res = await fetch(`${baseURL}/delete/${id}`, { method: 'DELETE' });
         const data = await res.json();
         alert(data.message || data.error);
         fetchDocs();
